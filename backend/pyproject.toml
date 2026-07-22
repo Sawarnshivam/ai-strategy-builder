@@ -12,3 +12,12 @@ select = ["E", "F", "I", "N", "UP", "B", "ANN"]
 python_version = "3.11"
 strict = true
 ignore_missing_imports = true
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Path",
+    "fastapi.Body",
+    "fastapi.Header",
+]
