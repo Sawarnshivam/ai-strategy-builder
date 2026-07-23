@@ -20,7 +20,7 @@ class Strategy(Base, TimestampMixin):
         primary_key=True,
         default=uuid.uuid4,
     )
-    name: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False, index=True, unique=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     prompt: Mapped[str] = mapped_column(Text, nullable=False)
     parameters: Mapped[dict[str, Any]] = mapped_column(
