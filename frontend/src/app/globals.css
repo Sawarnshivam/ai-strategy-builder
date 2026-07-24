@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@theme {
+  /* Surfaces — cool near-black, three steps of elevation. */
+  --color-void: #0b0d10;
+  --color-panel: #12151a;
+  --color-raised: #171b22;
+  --color-line: #232830;
+  --color-line-bright: #2f3642;
+
+  /* Text */
+  --color-ink: #e7eaf0;
+  --color-ink-dim: #8b94a5;
+  --color-ink-faint: #5a6272;
+
+  /* Signal — the one accent. Used for live state and primary actions only. */
+  --color-signal: #ffb020;
+  --color-signal-dim: #7a5510;
+
+  /* Position semantics — reserved for long/short, never decoration. */
+  --color-long: #26a69a;
+  --color-short: #ef5350;
+
+  --font-sans: var(--font-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-void);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Numeric data aligns in columns; tabular figures are non-negotiable here. */
+  .tabular {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-signal);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     postgres_port: int = 5432
     db_echo: bool = False
 
+    # CORS
+    cors_origins: str = "http://localhost:3000"
+
     @property
     def database_url(self) -> str:
         """SQLAlchemy-compatible Postgres connection string."""
@@ -39,6 +42,11 @@ class Settings(BaseSettings):
             f"postgresql+psycopg2://{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        """Parse the comma-separated CORS origins into a list."""
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
 
 @lru_cache
