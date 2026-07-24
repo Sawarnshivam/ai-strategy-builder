@@ -35,3 +35,9 @@ class ValidationError(AppError):
 
     status_code = 422
     default_message = "Invalid request."
+
+class LLMError(AppError):
+    """Raised when the language model provider fails or is misconfigured."""
+
+    status_code = 502
+    default_message = "The AI provider is currently unavailable."

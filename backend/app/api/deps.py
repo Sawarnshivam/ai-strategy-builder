@@ -3,6 +3,9 @@
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
+from app.ai.client import LLMClient
+from app.ai.factory import build_llm_client
+from app.core.config import Settings, get_settings
 from app.db.session import get_db
 from app.repositories.strategy_repository import StrategyRepository
 from app.services.strategy_service import StrategyService
@@ -18,3 +21,8 @@ def get_strategy_service(
 ) -> StrategyService:
     """Provide a request-scoped strategy service."""
     return StrategyService(repository)
+
+
+def get_llm_client(settings: Settings = Depends(get_settings)) -> LLMClient:
+    """Provide the configured LLM client (real or fake) for a request."""
+    return build_llm_client(settings)

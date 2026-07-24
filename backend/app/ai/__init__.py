@@ -1,0 +1,1 @@
+"""AI integration layer: LLM client abstraction and providers."""

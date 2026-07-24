@@ -69,3 +69,8 @@ def client(db_session: Session) -> Generator[TestClient, None, None]:
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+
+@pytest.fixture(scope="session")
+def anyio_backend() -> str:
+    """Run async tests on asyncio only (not trio)."""
+    return "asyncio"

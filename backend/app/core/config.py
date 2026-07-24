@@ -35,6 +35,18 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: str = "http://localhost:3000"
 
+    # Anthropic / LLM
+    anthropic_api_key: str = ""
+    llm_model: str = "claude-sonnet-4-5"
+    llm_max_tokens: int = 4096
+    llm_timeout_seconds: float = 60.0
+    llm_max_retries: int = 2
+
+    @property
+    def llm_enabled(self) -> bool:
+        """True when a real Anthropic key is configured; otherwise use the fake client."""
+        return bool(self.anthropic_api_key.strip())
+
     @property
     def database_url(self) -> str:
         """SQLAlchemy-compatible Postgres connection string."""
