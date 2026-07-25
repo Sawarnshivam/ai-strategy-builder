@@ -13,6 +13,7 @@ from app.market_data.provider import OHLCVProvider
 from app.repositories.backtest_repository import BacktestRepository
 from app.repositories.strategy_repository import StrategyRepository
 from app.services.backtest_service import BacktestService
+from app.services.optimizer_service import OptimizerService
 from app.services.strategy_service import StrategyService
 
 
@@ -56,3 +57,9 @@ def get_backtest_service(
 ) -> BacktestService:
     """Provide a fully-wired backtest service for a request."""
     return BacktestService(provider, spec_generator, repository)
+
+def get_optimizer_service(
+    provider: OHLCVProvider = Depends(get_ohlcv_provider),
+) -> OptimizerService:
+    """Provide a sweep optimizer wired to the market-data provider."""
+    return OptimizerService(provider)

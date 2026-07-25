@@ -6,6 +6,7 @@ import { DrawdownChart } from "@/components/results/drawdown-chart";
 import { EquityChart } from "@/components/results/equity-chart";
 import { MetricStrip } from "@/components/results/metric-strip";
 import { TradeList } from "@/components/results/trade-list";
+import { OptimizePanel } from "@/components/optimize/optimize-panel";
 import { computeDrawdown } from "@/lib/drawdown";
 import { useWorkspaceStore } from "@/store/workspace-store";
 
@@ -38,6 +39,8 @@ export function ResultsView() {
       </div>
 
       <MetricStrip metrics={result.metrics} />
+
+      <OptimizePanel spec={result.spec} />
 
       <section>
         <h3 className="mb-1 text-[10px] uppercase tracking-wide text-ink-faint">Equity</h3>
