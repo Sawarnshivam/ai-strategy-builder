@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.ai.client import LLMClient
 from app.ai.factory import build_llm_client
+from app.ai.spec_generator import SpecGenerator
 from app.core.config import Settings, get_settings
 from app.db.session import get_db
 from app.repositories.strategy_repository import StrategyRepository
@@ -26,3 +27,9 @@ def get_strategy_service(
 def get_llm_client(settings: Settings = Depends(get_settings)) -> LLMClient:
     """Provide the configured LLM client (real or fake) for a request."""
     return build_llm_client(settings)
+
+def get_spec_generator(
+    client: LLMClient = Depends(get_llm_client),
+) -> SpecGenerator:
+    """Provide a spec generator wired to the configured LLM client."""
+    return SpecGenerator(client)

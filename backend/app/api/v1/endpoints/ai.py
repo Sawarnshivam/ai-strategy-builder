@@ -1,7 +1,7 @@
-"""Diagnostic endpoint to verify the LLM layer end-to-end.
+"""Diagnostic and generation endpoints for the LLM layer.
 
-This is intentionally thin — a smoke test that the client wiring works. Real
-strategy generation arrives in a later module with proper prompt templates.
+/complete is a thin smoke test of the client wiring. /generate-spec turns a
+plain-language request into a validated StrategySpec.
 """
 
 from fastapi import APIRouter, Depends
@@ -9,8 +9,15 @@ from fastapi import APIRouter, Depends
 from app.ai.client import LLMClient
 from app.ai.fake_client import FakeLLMClient
 from app.ai.models import CompletionRequest, Message, Role
-from app.api.deps import get_llm_client
-from app.schemas.ai import CompletionRequestBody, CompletionResponseBody
+from app.ai.prompts.strategy_generation import SPEC_PROMPT_VERSION
+from app.ai.spec_generator import SpecGenerator
+from app.api.deps import get_llm_client, get_spec_generator
+from app.schemas.ai import (
+    CompletionRequestBody,
+    CompletionResponseBody,
+    SpecGenerationRequestBody,
+    SpecGenerationResponseBody,
+)
 
 router = APIRouter(prefix="/ai", tags=["ai"])
 
@@ -36,5 +43,24 @@ async def complete(
         model=result.model,
         input_tokens=result.usage.input_tokens,
         output_tokens=result.usage.output_tokens,
+        provider=provider,
+    )
+
+
+@router.post(
+    "/generate-spec",
+    response_model=SpecGenerationResponseBody,
+    summary="Generate a structured strategy spec from plain language",
+)
+async def generate_spec(
+    body: SpecGenerationRequestBody,
+    generator: SpecGenerator = Depends(get_spec_generator),
+) -> SpecGenerationResponseBody:
+    """Turn a natural-language strategy description into a validated spec."""
+    spec = await generator.generate(body.description)
+    provider = "fake" if isinstance(generator.client, FakeLLMClient) else "anthropic"
+    return SpecGenerationResponseBody(
+        spec=spec,
+        prompt_version=SPEC_PROMPT_VERSION,
         provider=provider,
     )

@@ -1,5 +1,6 @@
 """Pytest fixtures: isolated Postgres test database and API client."""
 
+import json
 from collections.abc import Generator
 
 import pytest
@@ -70,7 +71,34 @@ def client(db_session: Session) -> Generator[TestClient, None, None]:
         yield test_client
     app.dependency_overrides.clear()
 
+
 @pytest.fixture(scope="session")
 def anyio_backend() -> str:
     """Run async tests on asyncio only (not trio)."""
     return "asyncio"
+
+
+@pytest.fixture()
+def valid_spec_json() -> str:
+    """A well-formed StrategySpec as a JSON string, for scripting the fake client."""
+    return json.dumps(
+        {
+            "name": "BTC Momentum RSI+EMA",
+            "symbol": "BTC-USD",
+            "timeframe": "1h",
+            "direction": "long",
+            "indicators": [
+                {"name": "rsi", "type": "rsi", "params": {"period": 14}},
+                {"name": "ema_fast", "type": "ema", "params": {"period": 12}},
+            ],
+            "entry_rules": [
+                {"left": "rsi", "comparator": "less_than", "right": "30"},
+                {"left": "price", "comparator": "greater_than", "right": "ema_fast"},
+            ],
+            "exit_rules": [
+                {"left": "rsi", "comparator": "greater_than", "right": "70"}
+            ],
+            "risk": {"position_size_pct": 50, "stop_loss_pct": 5},
+            "rationale": "Buy oversold dips that remain above trend.",
+        }
+    )
