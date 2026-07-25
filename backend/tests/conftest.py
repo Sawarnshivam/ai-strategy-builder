@@ -12,6 +12,7 @@ from app.core.config import get_settings
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import create_app
+from app.market_data.synthetic_provider import SyntheticOHLCVProvider
 from app.models import Strategy  # noqa: F401 — ensures tables are registered
 
 settings = get_settings()
@@ -102,3 +103,9 @@ def valid_spec_json() -> str:
             "rationale": "Buy oversold dips that remain above trend.",
         }
     )
+
+
+@pytest.fixture()
+def synthetic_provider() -> SyntheticOHLCVProvider:
+    """A synthetic OHLCV provider with a fixed seed for deterministic tests."""
+    return SyntheticOHLCVProvider(seed=42)

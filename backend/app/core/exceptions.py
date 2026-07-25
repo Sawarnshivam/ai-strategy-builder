@@ -36,8 +36,16 @@ class ValidationError(AppError):
     status_code = 422
     default_message = "Invalid request."
 
+
 class LLMError(AppError):
     """Raised when the language model provider fails or is misconfigured."""
 
     status_code = 502
     default_message = "The AI provider is currently unavailable."
+
+
+class MarketDataError(AppError):
+    """Raised when price data cannot be produced or is malformed."""
+
+    status_code = 502
+    default_message = "Market data is currently unavailable."

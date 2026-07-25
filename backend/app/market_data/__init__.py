@@ -1,0 +1,1 @@
+"""Market data layer: OHLCV provider abstraction, synthetic source, and caching."""

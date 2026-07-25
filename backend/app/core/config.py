@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     llm_timeout_seconds: float = 60.0
     llm_max_retries: int = 2
 
+    # Market data
+    market_data_cache_dir: str = ".cache/market_data"
+    market_data_synthetic_seed: int = 42
+
     @property
     def llm_enabled(self) -> bool:
         """True when a real Anthropic key is configured; otherwise use the fake client."""
