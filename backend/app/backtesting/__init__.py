@@ -1,0 +1,1 @@
+"""Backtesting engine: indicators, rule evaluation, simulation, and metrics."""

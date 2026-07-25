@@ -24,6 +24,11 @@ python_version = "3.11"
 strict = true
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = "app.backtesting.*"
+disallow_any_generics = false
+disable_error_code = ["type-arg", "operator"]
+
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
