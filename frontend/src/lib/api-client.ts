@@ -6,6 +6,7 @@
  */
 
 import { env } from "@/lib/env";
+import { getToken, useAuthStore } from "@/store/auth-store";
 
 const DEFAULT_TIMEOUT_MS = 10_000;
 
@@ -30,6 +31,7 @@ export async function apiRequest<T>(
   path: string,
   { body, timeoutMs = DEFAULT_TIMEOUT_MS, headers, ...init }: RequestOptions = {},
 ): Promise<T> {
+  const token = getToken();
   let response: Response;
 
   try {
@@ -37,6 +39,7 @@ export async function apiRequest<T>(
       ...init,
       headers: {
         "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...headers,
       },
       body: body === undefined ? undefined : JSON.stringify(body),
@@ -44,6 +47,11 @@ export async function apiRequest<T>(
     });
   } catch {
     throw new ApiError(0, "Cannot reach the API. Is the backend running?");
+  }
+
+  if (response.status === 401) {
+    // Token missing/expired — drop it so the UI shows the login screen.
+    useAuthStore.getState().clearToken();
   }
 
   if (response.status === 204) {

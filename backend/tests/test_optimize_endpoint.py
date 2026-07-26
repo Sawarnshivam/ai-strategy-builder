@@ -24,9 +24,11 @@ def _body() -> dict:
     }
 
 
-def test_sweep_returns_ranked_points(client: TestClient) -> None:
+def test_sweep_returns_ranked_points(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
     """The endpoint returns a ranked sweep with a best value."""
-    response = client.post(BASE, json=_body())
+    response = client.post(BASE, json=_body(), headers=auth_headers)
 
     assert response.status_code == 200
     body = response.json()
@@ -35,10 +37,18 @@ def test_sweep_returns_ranked_points(client: TestClient) -> None:
     assert body["rank_by"] == "sharpe_ratio"
 
 
-def test_sweep_rejects_unknown_indicator(client: TestClient) -> None:
+def test_sweep_rejects_unknown_indicator(
+    client: TestClient, auth_headers: dict[str, str]
+) -> None:
     """Sweeping an undeclared indicator returns a 422 domain error."""
     body = _body()
     body["indicator_name"] = "rsi"
 
-    response = client.post(BASE, json=body)
+    response = client.post(BASE, json=body, headers=auth_headers)
     assert response.status_code == 422
+
+
+def test_sweep_requires_auth(client: TestClient) -> None:
+    """The sweep endpoint rejects requests with no token."""
+    response = client.post(BASE, json=_body())
+    assert response.status_code == 401

@@ -1,14 +1,17 @@
 "use client";
 
+import { LogOut } from "lucide-react";
 import type { ReactNode } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 
+import { LoginScreen } from "@/components/auth/login-screen";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { WorkPanel } from "@/components/layout/panel";
 import { Sidebar } from "@/components/layout/sidebar";
 import { ResultsView } from "@/components/results/results-view";
 import { StrategyView } from "@/components/strategy/strategy-view";
 import { BackendStatus } from "@/components/system/backend-status";
+import { useAuthStore } from "@/store/auth-store";
 
 function ResizeHandle() {
   return (
@@ -18,6 +21,13 @@ function ResizeHandle() {
 
 /** Top-level workspace frame: rail, top bar, and three resizable columns. */
 export function AppShell({ children }: { children: ReactNode }) {
+  const token = useAuthStore((s) => s.token);
+  const clearToken = useAuthStore((s) => s.clearToken);
+
+  if (!token) {
+    return <LoginScreen />;
+  }
+
   return (
     <div className="flex h-dvh w-full overflow-hidden bg-void">
       <Sidebar />
@@ -28,7 +38,18 @@ export function AppShell({ children }: { children: ReactNode }) {
             <span className="text-[13px] font-semibold">AI Strategy Builder</span>
             <span className="text-[12px] text-ink-faint">Untitled strategy</span>
           </div>
-          <BackendStatus />
+          <div className="flex items-center gap-3">
+            <BackendStatus />
+            <button
+              type="button"
+              onClick={clearToken}
+              title="Log out"
+              className="flex h-7 w-7 items-center justify-center rounded-md text-ink-faint transition-colors hover:bg-raised hover:text-ink-dim"
+            >
+              <LogOut size={15} strokeWidth={1.75} />
+              <span className="sr-only">Log out</span>
+            </button>
+          </div>
         </header>
 
         <PanelGroup

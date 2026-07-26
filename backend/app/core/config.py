@@ -46,6 +46,11 @@ class Settings(BaseSettings):
     market_data_cache_dir: str = ".cache/market_data"
     market_data_synthetic_seed: int = 42
 
+    # Auth
+    jwt_secret: str = "dev-insecure-change-me"
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 60 * 24
+
     @property
     def llm_enabled(self) -> bool:
         """True when a real Anthropic key is configured; otherwise use the fake client."""

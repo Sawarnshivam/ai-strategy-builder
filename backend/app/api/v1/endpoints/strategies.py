@@ -4,7 +4,8 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
 
-from app.api.deps import get_strategy_service
+from app.api.deps import get_current_user, get_strategy_service
+from app.models.user import User
 from app.schemas.strategy import (
     StrategyCreate,
     StrategyListResponse,
@@ -25,6 +26,7 @@ router = APIRouter(prefix="/strategies", tags=["strategies"])
 def create_strategy(
     payload: StrategyCreate,
     service: StrategyService = Depends(get_strategy_service),
+    _user: User = Depends(get_current_user),
 ) -> StrategyRead:
     """Create a strategy from a natural-language prompt and optional parameters."""
     strategy = service.create(payload)
@@ -74,6 +76,7 @@ def update_strategy(
     strategy_id: UUID,
     payload: StrategyUpdate,
     service: StrategyService = Depends(get_strategy_service),
+    _user: User = Depends(get_current_user),
 ) -> StrategyRead:
     """Partially update a strategy. Omitted fields are left untouched."""
     return StrategyRead.model_validate(service.update(strategy_id, payload))
@@ -87,6 +90,7 @@ def update_strategy(
 def delete_strategy(
     strategy_id: UUID,
     service: StrategyService = Depends(get_strategy_service),
+    _user: User = Depends(get_current_user),
 ) -> None:
     """Permanently delete a strategy."""
     service.delete(strategy_id)

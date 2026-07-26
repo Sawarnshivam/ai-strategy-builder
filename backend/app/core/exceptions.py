@@ -49,3 +49,9 @@ class MarketDataError(AppError):
 
     status_code = 502
     default_message = "Market data is currently unavailable."
+
+class AuthError(AppError):
+    """Raised on failed authentication or authorization."""
+
+    status_code = 401
+    default_message = "Authentication failed."

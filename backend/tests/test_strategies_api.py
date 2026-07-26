@@ -1,83 +1,102 @@
-"""Integration tests for the strategy CRUD endpoints."""
+"""Integration tests for the backtest endpoints."""
 
+from collections.abc import Iterator
+
+import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
-BASE = "/api/v1/strategies"
+from app.ai.fake_client import FakeLLMClient
+from app.api.deps import get_llm_client
+from app.db.session import get_db
+from app.main import create_app
 
-PAYLOAD = {
-    "name": "BTC Momentum RSI+EMA",
-    "description": "Long when RSI recovers above 30 with price over the 200 EMA.",
-    "prompt": "Create a momentum strategy for BTC using RSI and EMA.",
-    "parameters": {"rsi_period": 14, "ema_period": 200},
-}
+BASE = "/api/v1/backtests"
 
 
-def test_create_returns_201_and_persisted_entity(client: TestClient) -> None:
-    """A valid payload is stored and echoed back with server-generated fields."""
-    response = client.post(BASE, json=PAYLOAD)
+@pytest.fixture()
+def bt_client(db_session: Session, valid_spec_json: str) -> Iterator[TestClient]:
+    """A client whose LLM returns a valid spec; data is synthetic via the app."""
+    app = create_app()
+
+    def _fake_client() -> FakeLLMClient:
+        return FakeLLMClient(reply=valid_spec_json)
+
+    def _override_get_db() -> Iterator[Session]:
+        yield db_session
+
+    app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[get_llm_client] = _fake_client
+    with TestClient(app) as client:
+        yield client
+    app.dependency_overrides.clear()
+
+
+def _auth(client: TestClient) -> dict[str, str]:
+    """Register a user on this client and return an auth header."""
+    token = client.post(
+        "/api/v1/auth/signup",
+        json={"email": "bt@example.com", "password": "supersecret123"},
+    ).json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+def test_run_from_description_returns_result(bt_client: TestClient) -> None:
+    """Running from a description returns a full result with an equity curve."""
+    headers = _auth(bt_client)
+    response = bt_client.post(
+        BASE, json={"description": "momentum BTC RSI EMA"}, headers=headers
+    )
 
     assert response.status_code == 201
     body = response.json()
-    assert body["name"] == PAYLOAD["name"]
-    assert body["parameters"]["rsi_period"] == 14
-    assert body["id"] and body["created_at"]
+    assert body["symbol"] == "BTC-USD"
+    assert body["metrics"]["num_trades"] >= 0
+    assert len(body["equity_curve"]) > 0
+    assert body["id"]
 
 
-def test_duplicate_name_returns_409(client: TestClient) -> None:
-    """Names are unique across strategies."""
-    client.post(BASE, json=PAYLOAD)
-    response = client.post(BASE, json=PAYLOAD)
-
-    assert response.status_code == 409
-    assert response.json()["code"] == "ConflictError"
+def test_run_requires_auth(bt_client: TestClient) -> None:
+    """Running a backtest without a token is rejected."""
+    response = bt_client.post(BASE, json={"description": "x"})
+    assert response.status_code == 401
 
 
-def test_blank_name_returns_422(client: TestClient) -> None:
-    """Whitespace-only names are rejected by schema validation."""
-    response = client.post(BASE, json={**PAYLOAD, "name": "   "})
+def test_requesting_both_description_and_spec_is_rejected(bt_client: TestClient) -> None:
+    """Supplying both sources fails validation."""
+    headers = _auth(bt_client)
+    response = bt_client.post(
+        BASE,
+        json={"description": "x", "spec": {"name": "y"}},
+        headers=headers,
+    )
     assert response.status_code == 422
 
 
-def test_list_returns_paginated_envelope(client: TestClient) -> None:
-    """Listing returns items plus pagination metadata."""
-    client.post(BASE, json=PAYLOAD)
-    client.post(BASE, json={**PAYLOAD, "name": "ETH Reversion"})
-
-    response = client.get(BASE, params={"limit": 1, "offset": 0})
-
-    assert response.status_code == 200
-    body = response.json()
-    assert len(body["items"]) == 1
-    assert body["total"] == 2
-    assert body["limit"] == 1
+def test_requesting_neither_is_rejected(bt_client: TestClient) -> None:
+    """Supplying neither source fails validation."""
+    headers = _auth(bt_client)
+    response = bt_client.post(BASE, json={}, headers=headers)
+    assert response.status_code == 422
 
 
-def test_get_unknown_id_returns_404(client: TestClient) -> None:
-    """Unknown ids produce a domain 404, not a 500."""
-    response = client.get(f"{BASE}/00000000-0000-0000-0000-000000000000")
+def test_get_and_list_runs(bt_client: TestClient) -> None:
+    """A run can be listed and fetched by id after creation."""
+    headers = _auth(bt_client)
+    created = bt_client.post(
+        BASE, json={"description": "momentum BTC"}, headers=headers
+    ).json()
 
+    listing = bt_client.get(BASE, params={"limit": 10})
+    assert listing.status_code == 200
+    assert listing.json()["total"] >= 1
+
+    fetched = bt_client.get(f"{BASE}/{created['id']}")
+    assert fetched.status_code == 200
+    assert fetched.json()["id"] == created["id"]
+
+
+def test_get_unknown_run_returns_404(bt_client: TestClient) -> None:
+    """An unknown run id returns a domain 404."""
+    response = bt_client.get(f"{BASE}/00000000-0000-0000-0000-000000000000")
     assert response.status_code == 404
-    assert response.json()["code"] == "NotFoundError"
-
-
-def test_patch_applies_partial_update(client: TestClient) -> None:
-    """Omitted fields are preserved by a PATCH."""
-    created = client.post(BASE, json=PAYLOAD).json()
-
-    response = client.patch(
-        f"{BASE}/{created['id']}",
-        json={"description": "Updated thesis."},
-    )
-
-    assert response.status_code == 200
-    body = response.json()
-    assert body["description"] == "Updated thesis."
-    assert body["name"] == PAYLOAD["name"]
-
-
-def test_delete_removes_strategy(client: TestClient) -> None:
-    """Deleting returns 204 and the resource is gone afterwards."""
-    created = client.post(BASE, json=PAYLOAD).json()
-
-    assert client.delete(f"{BASE}/{created['id']}").status_code == 204
-    assert client.get(f"{BASE}/{created['id']}").status_code == 404

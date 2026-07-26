@@ -32,9 +32,21 @@ def bt_client(db_session: Session, valid_spec_json: str) -> Iterator[TestClient]
     app.dependency_overrides.clear()
 
 
+def _auth(client: TestClient) -> dict[str, str]:
+    """Register a user on this client and return an auth header."""
+    token = client.post(
+        "/api/v1/auth/signup",
+        json={"email": "bt@example.com", "password": "supersecret123"},
+    ).json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
 def test_run_from_description_returns_result(bt_client: TestClient) -> None:
     """Running from a description returns a full result with an equity curve."""
-    response = bt_client.post(BASE, json={"description": "momentum BTC RSI EMA"})
+    headers = _auth(bt_client)
+    response = bt_client.post(
+        BASE, json={"description": "momentum BTC RSI EMA"}, headers=headers
+    )
 
     assert response.status_code == 201
     body = response.json()
@@ -44,24 +56,36 @@ def test_run_from_description_returns_result(bt_client: TestClient) -> None:
     assert body["id"]
 
 
+def test_run_requires_auth(bt_client: TestClient) -> None:
+    """Running a backtest without a token is rejected."""
+    response = bt_client.post(BASE, json={"description": "x"})
+    assert response.status_code == 401
+
+
 def test_requesting_both_description_and_spec_is_rejected(bt_client: TestClient) -> None:
     """Supplying both sources fails validation."""
+    headers = _auth(bt_client)
     response = bt_client.post(
         BASE,
         json={"description": "x", "spec": {"name": "y"}},
+        headers=headers,
     )
     assert response.status_code == 422
 
 
 def test_requesting_neither_is_rejected(bt_client: TestClient) -> None:
     """Supplying neither source fails validation."""
-    response = bt_client.post(BASE, json={})
+    headers = _auth(bt_client)
+    response = bt_client.post(BASE, json={}, headers=headers)
     assert response.status_code == 422
 
 
 def test_get_and_list_runs(bt_client: TestClient) -> None:
     """A run can be listed and fetched by id after creation."""
-    created = bt_client.post(BASE, json={"description": "momentum BTC"}).json()
+    headers = _auth(bt_client)
+    created = bt_client.post(
+        BASE, json={"description": "momentum BTC"}, headers=headers
+    ).json()
 
     listing = bt_client.get(BASE, params={"limit": 10})
     assert listing.status_code == 200

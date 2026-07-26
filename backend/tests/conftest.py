@@ -109,3 +109,18 @@ def valid_spec_json() -> str:
 def synthetic_provider() -> SyntheticOHLCVProvider:
     """A synthetic OHLCV provider with a fixed seed for deterministic tests."""
     return SyntheticOHLCVProvider(seed=42)
+
+@pytest.fixture()
+def auth_token(client: TestClient) -> str:
+    """Register a user and return a bearer token for protected routes."""
+    response = client.post(
+        "/api/v1/auth/signup",
+        json={"email": "tester@example.com", "password": "supersecret123"},
+    )
+    return str(response.json()["access_token"])
+
+
+@pytest.fixture()
+def auth_headers(auth_token: str) -> dict[str, str]:
+    """Authorization header carrying the test user's token."""
+    return {"Authorization": f"Bearer {auth_token}"}

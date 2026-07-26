@@ -5,9 +5,10 @@ import uuid
 from fastapi import APIRouter, Depends, Query, status
 
 from app.ai.strategy_spec import StrategySpec
-from app.api.deps import get_backtest_service
+from app.api.deps import get_backtest_service, get_current_user
 from app.core.exceptions import NotFoundError
 from app.models.backtest_run import BacktestRun
+from app.models.user import User
 from app.schemas.backtest import (
     BacktestRequestBody,
     BacktestResultResponse,
@@ -48,6 +49,7 @@ def _to_result_response(run: BacktestRun) -> BacktestResultResponse:
 async def run_backtest(
     body: BacktestRequestBody,
     service: BacktestService = Depends(get_backtest_service),
+    _user: User = Depends(get_current_user),
 ) -> BacktestResultResponse:
     """Run and persist a backtest, returning equity curve, trades and metrics."""
     run = await service.run(
