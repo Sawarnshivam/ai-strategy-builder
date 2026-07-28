@@ -33,3 +33,17 @@ disable_error_code = ["type-arg", "operator"]
 pythonpath = ["."]
 testpaths = ["tests"]
 addopts = "-q --strict-markers"
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["app/main.py", "*/alembic/*"]
+
+[tool.coverage.report]
+skip_covered = false
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "\\.\\.\\.",
+]
