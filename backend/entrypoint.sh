@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+set -e
+
+# Wait for Postgres, then apply migrations before serving.
+echo "Running database migrations..."
+alembic upgrade head
+
+echo "Starting API server..."
+exec uvicorn app.main:app --host 0.0.0.0 --port 8000

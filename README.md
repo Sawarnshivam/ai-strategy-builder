@@ -50,3 +50,34 @@ cd frontend && npm run lint && npm run build
 ```
 
 CI runs all of the above on every push and pull request.
+
+## Deployment
+
+The whole stack runs as three containers (Postgres, backend, frontend) via
+`docker-compose.prod.yml`. It is host-agnostic — anywhere Docker runs.
+
+1. Copy the env template and fill in real secrets:
+
+```bash
+   cp .env.prod.example .env.prod
+   # set a strong POSTGRES_PASSWORD and a long random JWT_SECRET
+```
+
+2. Build and start:
+
+```bash
+   docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+```
+
+   The backend runs migrations automatically on start, then serves on :8000.
+   The frontend serves on :3000.
+
+3. Open http://localhost:3000, sign up, and use it.
+
+To deploy on a remote host, copy the repo (or pull it) onto a Docker-capable
+server, set `CORS_ORIGINS` and `NEXT_PUBLIC_API_BASE_URL` to the server's public
+URLs in `.env.prod`, and run the same compose command. Put a reverse proxy
+(Caddy, nginx, Traefik) in front for TLS.
+
+Stop with `docker compose -f docker-compose.prod.yml down` (add `-v` to wipe the
+database volume).
